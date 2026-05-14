@@ -374,6 +374,9 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
       <div class="section-row"><div class="section-dot"></div><span class="section-title">Tabela Resumo — Headcount por Loja / Mês</span></div>
       <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcTableHead"></tr></thead><tbody id="hcTableBody"></tbody></table></div></div>
 
+      <div class="section-row" style="margin-top:20px"><div class="section-dot" style="background:var(--orange)"></div><span class="section-title">Tabela Resumo — Headcount por Centro de Custo / Mês</span></div>
+      <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcCcTableHead"></tr></thead><tbody id="hcCcTableBody"></tbody></table></div></div>
+
     </div>
   </div>
 
@@ -1056,10 +1059,14 @@ function applyHeadcount(){
     options:ccOpts
   });
 
-  // ── Tabela ──
+  // ── Tabela por Loja ──
   window._hcTableData={selLojas,months,data};
   window._hcSort={col:0,dir:'none'};
   renderHcTable(0,'none');
+  // ── Tabela por Centro de Custo ──
+  window._hcCcTableData={selCcs,months,data};
+  window._hcCcSort={col:0,dir:'none'};
+  renderHcCcTable(0,'none');
 }
 
 function renderHcTable(sortCol,sortDir){
@@ -1105,6 +1112,63 @@ function sortHcTable(col){
   s.dir=s.col===col?(s.dir==='none'||s.dir==='desc'?'asc':'desc'):'asc';
   s.col=col;
   renderHcTable(s.col,s.dir);
+}
+
+function renderHcCcTable(sortCol,sortDir){
+  const{selCcs,months,data}=window._hcCcTableData||{};
+  if(!selCcs||!selCcs.length)return;
+
+  let rows=selCcs.map(cc=>{
+    const d=data.filter(r=>r.cc===cc);
+    const vals=months.map(k=>{
+      const[Y,M]=k.split('-').map(Number),ld=new Date(Y,M,0);
+      return d.filter(r=>r.admissao&&r.admissao<=ld&&(!r.rescisao||r.rescisao>ld)).length;
+    });
+    const nums=vals.filter(v=>v>0);
+    const avg=nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;
+    return{cc,vals,avg};
+  }).filter(r=>r.vals.some(v=>v>0));
+
+  if(sortDir!=='none'){
+    rows.sort((a,b)=>{
+      if(sortCol===0)return sortDir==='asc'?a.cc.localeCompare(b.cc):b.cc.localeCompare(a.cc);
+      const va=sortCol===months.length+1?a.avg:(a.vals[sortCol-1]??-1);
+      const vb=sortCol===months.length+1?b.avg:(b.vals[sortCol-1]??-1);
+      return sortDir==='asc'?va-vb:vb-va;
+    });
+  }
+
+  const mkTh=(label,col)=>{
+    const cls=col===sortCol?(sortDir==='asc'?'asc':'desc'):'';
+    return`<th class="sort-th ${col===0?'sort-str':''} ${cls}" onclick="sortHcCcTable(${col})">${label}</th>`;
+  };
+  document.getElementById('hcCcTableHead').innerHTML=
+    mkTh('Centro de Custo',0)+months.map((m,i)=>mkTh(mLbl(m),i+1)).join('')+mkTh('Média',months.length+1);
+
+  document.getElementById('hcCcTableBody').innerHTML=rows.map(({cc,vals,avg})=>{
+    const cells=vals.map(v=>{
+      const style=v>0?'color:var(--text)':'color:#ccc';
+      return`<td style="text-align:center;font-family:'DM Mono',monospace;font-size:12px;${style}">${v||'—'}</td>`;
+    }).join('');
+    return`<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:7px"></span><strong>${cc}</strong></td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;font-family:'DM Mono',monospace;font-size:12px">${avg?avg.toFixed(1):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  if(!rows.length){
+    const cols=months.length+2;
+    document.getElementById('hcCcTableBody').innerHTML=`<tr><td colspan="${cols}" class="empty">Nenhum dado para os centros de custo selecionados.</td></tr>`;
+  }
+}
+
+window._hcCcSort={col:0,dir:'none'};
+function sortHcCcTable(col){
+  const s=window._hcCcSort;
+  s.dir=s.col===col?(s.dir==='none'||s.dir==='desc'?'asc':'desc'):'asc';
+  s.col=col;
+  renderHcCcTable(s.col,s.dir);
 }
 
 // ── HELPERS ─────────────────────────────────────────────────────
