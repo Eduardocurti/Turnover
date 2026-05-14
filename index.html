@@ -388,7 +388,16 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
       <div class="section-row"><div class="section-dot"></div><span class="section-title">Tabela Resumo — Headcount por Loja / Mês</span></div>
       <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcTableHead"></tr></thead><tbody id="hcTableBody"></tbody></table></div></div>
 
-      <div class="section-row" style="margin-top:20px"><div class="section-dot" style="background:var(--orange)"></div><span class="section-title">Tabela Resumo — Headcount por Centro de Custo / Mês</span></div>
+      <div class="card" style="margin-top:20px;margin-bottom:14px">
+        <div class="card-header">
+          <div><div class="card-title">Evolução de Headcount por Centro de Custo</div><div class="card-sub">Funcionários ativos mês a mês por CC</div></div>
+          <span class="tag orange">CC · Linha</span>
+        </div>
+        <div class="leg-pills" id="hcCcLineLegend"></div>
+        <div class="card-body"><div class="hc-chart-h"><canvas id="cHcCcLine"></canvas></div></div>
+      </div>
+
+      <div class="section-row"><div class="section-dot" style="background:var(--orange)"></div><span class="section-title">Tabela Resumo — Headcount por Centro de Custo / Mês</span></div>
       <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcCcTableHead"></tr></thead><tbody id="hcCcTableBody"></tbody></table></div></div>
 
     </div>
@@ -1081,6 +1090,7 @@ function applyHeadcount(){
   window._hcCcTableData={selCcs,months,data};
   window._hcCcSort={col:0,dir:'none'};
   renderHcCcTable(0,'none');
+  buildHcCcLineChart(selCcs,months,data);
 }
 
 function renderHcTable(sortCol,sortDir){
@@ -1126,6 +1136,68 @@ function sortHcTable(col){
   s.dir=s.col===col?(s.dir==='none'||s.dir==='desc'?'asc':'desc'):'asc';
   s.col=col;
   renderHcTable(s.col,s.dir);
+}
+
+function buildHcCcLineChart(selCcs,months,data){
+  const CC_COLORS=['#FF5028','#0A6B2C','#2E86AB','#F4A261','#6A4C93','#1B998B','#E71D36','#FF9F1C','#52B788','#B5179E'];
+
+  const datasets=selCcs.map((cc,i)=>{
+    const d=data.filter(r=>r.cc===cc);
+    const vals=months.map(k=>{
+      const[Y,M]=k.split('-').map(Number),ld=new Date(Y,M,0);
+      const v=d.filter(r=>r.admissao&&r.admissao<=ld&&(!r.rescisao||r.rescisao>ld)).length;
+      return v>0?v:null;
+    });
+    const color=CC_COLORS[i%CC_COLORS.length];
+    return{
+      label:cc,data:vals,
+      borderColor:color,backgroundColor:color+'22',
+      borderWidth:2.2,pointBackgroundColor:color,
+      pointRadius:5,pointHoverRadius:7,
+      fill:false,tension:.35,spanGaps:true
+    };
+  }).filter(ds=>ds.data.some(v=>v!==null));
+
+  kill('cHcCcLine');
+  charts['cHcCcLine']=new Chart(document.getElementById('cHcCcLine'),{
+    type:'line',
+    data:{labels:months.map(mLbl),datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:12,
+          titleFont:{size:12,family:'DM Sans'},bodyFont:{size:12,family:'DM Sans'},
+          callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!==null?ctx.parsed.y:'—'}`}
+        }
+      },
+      scales:{
+        x:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+        y:{grid:{color:C.grid},beginAtZero:false,ticks:{font:{size:11,family:'DM Sans'},color:C.muted}}
+      },
+      animation:{onComplete:function(){
+        const{ctx}=this;ctx.save();
+        ctx.font='600 10px "DM Sans",sans-serif';
+        ctx.textBaseline='bottom';ctx.textAlign='center';
+        datasets.forEach((_,di)=>{
+          const meta=this.getDatasetMeta(di);
+          const color=datasets[di].borderColor;
+          ctx.fillStyle=color;
+          meta.data.forEach((pt,i)=>{
+            const val=datasets[di].data[i];
+            if(val!==null&&val!==undefined)ctx.fillText(val,pt.x,pt.y-7);
+          });
+        });
+        ctx.restore();
+      }}
+    }
+  });
+
+  // legend pills
+  document.getElementById('hcCcLineLegend').innerHTML=datasets.map((ds,i)=>
+    `<div class="leg-pill"><div class="leg-dot" style="background:${ds.borderColor}"></div>${ds.label}</div>`
+  ).join('');
 }
 
 function renderHcCcTable(sortCol,sortDir){
