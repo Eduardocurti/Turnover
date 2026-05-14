@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root {
   --bg:#ffffff; --bg-soft:#f7faf8; --green:#0A6B2C; --green-mid:#0d8436;
@@ -155,6 +156,11 @@ tr:hover td{background:var(--green-light)}
 .hc-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
 .hc-chart-h{position:relative;height:320px}
 .hc-chart-h.sm{height:260px}
+
+/* EXPORT BTN */
+.export-btn{display:inline-flex;align-items:center;gap:6px;background:white;color:var(--green);border:1.5px solid var(--green-border);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.export-btn:hover{background:var(--green);color:white;border-color:var(--green)}
+.export-btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* SORT TH */
 .sort-th{cursor:pointer;user-select:none;white-space:nowrap;position:relative;padding-right:20px!important}
@@ -307,8 +313,16 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
         <div class="card-body"><div class="hist-chart-h"><canvas id="cHistorico"></canvas></div></div>
       </div>
 
-      <div class="section-row"><div class="section-dot"></div><span class="section-title">Tabela Resumo — Turnover % por Empresa / Mês</span></div>
-      <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="histHead"></tr></thead><tbody id="histBody"></tbody></table></div></div>
+      <div class="section-row">
+        <div class="section-dot"></div>
+        <span class="section-title">Tabela Resumo — Turnover % por Empresa / Mês</span>
+        <button class="export-btn" id="exportHistBtn" onclick="exportTableAsImage('histExportWrapper','Turnover_Historico')" style="margin-left:auto">
+          ⬇ Exportar como imagem
+        </button>
+      </div>
+      <div id="histExportWrapper">
+        <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="histHead"></tr></thead><tbody id="histBody"></tbody></table></div></div>
+      </div>
     </div>
   </div>
 
@@ -1169,6 +1183,45 @@ function sortHcCcTable(col){
   s.dir=s.col===col?(s.dir==='none'||s.dir==='desc'?'asc':'desc'):'asc';
   s.col=col;
   renderHcCcTable(s.col,s.dir);
+}
+
+// ── EXPORT IMAGEM ────────────────────────────────────────────────
+async function exportTableAsImage(wrapperId, filename){
+  const btn = document.getElementById('exportHistBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Gerando...'; }
+
+  const wrapper = document.getElementById(wrapperId);
+
+  // Cabeçalho temporário para a imagem
+  const header = document.createElement('div');
+  header.style.cssText = 'background:#0A6B2C;color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;font-family:DM Sans,sans-serif;border-radius:14px 14px 0 0';
+  header.innerHTML = `
+    <div>
+      <div style="font-size:15px;font-weight:700">Evolução do Turnover — Tabela Resumo</div>
+      <div style="font-size:11px;opacity:.65;margin-top:2px">Turnover % por Empresa / Mês · Exportado em ${new Date().toLocaleDateString('pt-BR')}</div>
+    </div>
+    <div style="font-size:11px;font-weight:600;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.25)">Turnover Dashboard</div>`;
+
+  wrapper.insertBefore(header, wrapper.firstChild);
+
+  try {
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+    const link = document.createElement('a');
+    link.download = `${filename}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e){
+    alert('Erro ao gerar imagem. Tente novamente.');
+    console.error(e);
+  } finally {
+    wrapper.removeChild(header);
+    if(btn){ btn.disabled=false; btn.innerHTML='⬇ Exportar como imagem'; }
+  }
 }
 
 // ── HELPERS ─────────────────────────────────────────────────────
