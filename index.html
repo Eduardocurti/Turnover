@@ -505,8 +505,23 @@ function parseAndMerge(buf,filename,origin='local'){
       admissao:toDate(g('Dt Admissão','DT ADMISSÃO','Admissão','Data Admissão')),
       rescisao:toDate(g('Dt Rescisão','DT RESCISÃO','Rescisão','Data Rescisão')),
       tipoResc:String(g('Tipo Rescisão','TIPO RESCISÃO','Motivo')||'').trim(),
-      sexo:String(g('Sexo','SEXO','Genero','Gênero','GENERO')||'').trim(),
-      dtNasc:toDate(g('Dt Nascimento','DT NASCIMENTO','Data Nascimento','DATA NASCIMENTO','dt_nascimento')),
+      sexo:(()=>{
+        const v=g('Sexo','SEXO','Gênero','Genero','GENERO');
+        return v?String(v).trim():'';
+      })(),
+      dtNasc:(()=>{
+        const v=g('Dt Nascimento','DT NASCIMENTO','Data Nascimento','DATA NASCIMENTO','dt_nascimento','Dt. Nascimento');
+        if(!v&&v!==0)return null;
+        // se vier como string dd/mm/yyyy
+        if(typeof v==='string'){
+          const p=v.trim().split(/[\/\-\.]/);
+          if(p.length===3){
+            if(p[0].length===4)return new Date(+p[0],+p[1]-1,+p[2]);
+            return new Date(+p[2],+p[1]-1,+p[0]);
+          }
+        }
+        return toDate(v);
+      })(),
       cc:(()=>{
         // busca exata primeiro
         const exact=g('Centro custo','Centro de custo','Centro de Custo','CENTRO CUSTO','CENTRO DE CUSTO');
