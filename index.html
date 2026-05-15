@@ -155,7 +155,7 @@ tr:hover td{background:var(--green-light)}
 /* HEADCOUNT */
 .hc-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
 .hc-chart-h{position:relative;height:320px}
-.hc-chart-h.sm{height:260px}
+.hc-chart-h.sm{height:300px}
 
 /* EXPORT BTN */
 .export-btn{display:inline-flex;align-items:center;gap:6px;background:white;color:var(--green);border:1.5px solid var(--green-border);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
@@ -272,11 +272,34 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
         <div class="card"><div class="card-header"><div><div class="card-title">Admissões vs. Desligamentos</div><div class="card-sub">Últimos 6 meses</div></div><span class="tag">Fluxo</span></div><div class="card-body"><div class="chart-h lg"><canvas id="cFluxo"></canvas></div></div></div>
       </div>
 
+      <!-- Perfil de Saídas -->
+      <div class="section-row">
+        <div class="section-dot"></div>
+        <span class="section-title">Perfil das Saídas — Gênero e Faixa Etária</span>
+      </div>
+      <div class="charts-2b" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Saídas por Gênero</div><div class="card-sub">Desligados no período</div></div>
+            <span class="tag">Gênero</span>
+          </div>
+          <div class="card-body"><div class="chart-h lg"><canvas id="cGenero"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Saídas por Faixa Etária</div><div class="card-sub">Desligados no período</div></div>
+            <span class="tag orange">Idade</span>
+          </div>
+          <div class="card-body"><div class="chart-h lg"><canvas id="cIdade"></canvas></div></div>
+        </div>
+      </div>
+
       <div class="section-row"><div class="section-dot"></div><span class="section-title">Plano de Ação — Desligamentos no Período</span></div>
       <div class="tbl-card">
         <div class="tbl-head"><div><div class="t">Diagnóstico Individual</div><div class="s">Desligados no período selecionado</div></div><div class="badge" id="tblCount">0</div></div>
         <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Loja</th><th>Dt Admissão</th><th>Dt Rescisão</th><th>Tempo de Casa</th><th>Faixa</th><th>Motivo</th></tr></thead><tbody id="tblBody"><tr><td colspan="8" class="empty">Selecione um período.</td></tr></tbody></table></div>
       </div>
+
     </div>
   </div>
 
@@ -482,6 +505,8 @@ function parseAndMerge(buf,filename,origin='local'){
       admissao:toDate(g('Dt Admissão','DT ADMISSÃO','Admissão','Data Admissão')),
       rescisao:toDate(g('Dt Rescisão','DT RESCISÃO','Rescisão','Data Rescisão')),
       tipoResc:String(g('Tipo Rescisão','TIPO RESCISÃO','Motivo')||'').trim(),
+      sexo:String(g('Sexo','SEXO','Genero','Gênero','GENERO')||'').trim(),
+      dtNasc:toDate(g('Dt Nascimento','DT NASCIMENTO','Data Nascimento','DATA NASCIMENTO','dt_nascimento')),
       cc:(()=>{
         // busca exata primeiro
         const exact=g('Centro custo','Centro de custo','Centro de Custo','CENTRO CUSTO','CENTRO DE CUSTO');
@@ -630,7 +655,7 @@ function updateAnalise(){
   const ab=document.getElementById('alertBox');
   if(early.length){ab.classList.remove('hidden');document.getElementById('alertMsg').textContent=`${early.length} desligamento(s) com menos de 90 dias de casa — atenção ao período de experiência!`;}
   else ab.classList.add('hidden');
-  buildEvolucao(data,period);buildDonut(desl);buildMotivos(desl);buildFluxo(data,period);buildTable(desl);
+  buildEvolucao(data,period);buildDonut(desl);buildMotivos(desl);buildFluxo(data,period);buildTable(desl);buildPerfil(desl);
 }
 
 function buildEvolucao(data,cur){
@@ -1052,7 +1077,13 @@ function applyHeadcount(){
   }).sort((a,b)=>b.count-a.count);
 
   kill('cHcLoja');
-  const lojaOpts=barOpts('');lojaOpts.indexAxis='y';
+  const lojaOpts=barOpts('');
+  lojaOpts.indexAxis='y';
+  lojaOpts.scales={
+    x:{grid:{color:C.grid},beginAtZero:true,ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+    y:{grid:{color:'transparent'},ticks:{font:{size:11,family:'DM Sans'},color:C.muted,autoSkip:false},
+      afterFit:function(axis){axis.width=Math.max(axis.width,160);}}
+  };
   lojaOpts.animation={onComplete:function(){drawBarLabels(this,'y');}};
   charts['cHcLoja']=new Chart(document.getElementById('cHcLoja'),{
     type:'bar',
@@ -1071,7 +1102,13 @@ function applyHeadcount(){
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
 
   kill('cHcCc');
-  const ccOpts=barOpts('');ccOpts.indexAxis='y';
+  const ccOpts=barOpts('');
+  ccOpts.indexAxis='y';
+  ccOpts.scales={
+    x:{grid:{color:C.grid},beginAtZero:true,ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+    y:{grid:{color:'transparent'},ticks:{font:{size:11,family:'DM Sans'},color:C.muted,autoSkip:false},
+      afterFit:function(axis){axis.width=Math.max(axis.width,160);}}
+  };
   ccOpts.animation={onComplete:function(){drawBarLabels(this,'y');}};
   charts['cHcCc']=new Chart(document.getElementById('cHcCc'),{
     type:'bar',
@@ -1255,6 +1292,169 @@ function sortHcCcTable(col){
   s.dir=s.col===col?(s.dir==='none'||s.dir==='desc'?'asc':'desc'):'asc';
   s.col=col;
   renderHcCcTable(s.col,s.dir);
+}
+
+// ── PERFIL DE SAÍDAS ─────────────────────────────────────────────
+function buildPerfil(desl){
+  buildGenero(desl);
+  buildIdade(desl);
+}
+
+function buildGenero(desl){
+  const counts={};
+  desl.forEach(r=>{
+    const s=r.sexo||'Não informado';
+    counts[s]=(counts[s]||0)+1;
+  });
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  const labels=Object.keys(counts);
+  const vals=Object.values(counts);
+
+  // cores por gênero
+  const COR_MAP={
+    'Masculino':'#0A6B2C','masculino':'#0A6B2C',
+    'Feminino':'#FF5028','feminino':'#FF5028',
+    'Não informado':'#aaa','Nao informado':'#aaa',
+  };
+  const bgColors=labels.map(l=>COR_MAP[l]||PAL[labels.indexOf(l)%PAL.length]);
+
+  // plugin de rótulo inline
+  const genLabelPlugin={id:'genLabels',afterDatasetsDraw(chart){
+    const{ctx,data}=chart;ctx.save();
+    chart.getDatasetMeta(0).data.forEach((arc,i)=>{
+      const val=data.datasets[0].data[i];
+      if(!val||total===0)return;
+      const pct=((val/total)*100).toFixed(1)+'%';
+      const mid=arc.startAngle+(arc.endAngle-arc.startAngle)/2;
+      const r=(arc.innerRadius+arc.outerRadius)/2;
+      const x=arc.x+r*Math.cos(mid),y=arc.y+r*Math.sin(mid);
+      ctx.fillStyle='#fff';ctx.font='bold 12px "DM Sans",sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      if(val>0)ctx.fillText(pct,x,y);
+    });
+    ctx.restore();
+  }};
+
+  kill('cGenero');
+  charts['cGenero']=new Chart(document.getElementById('cGenero'),{
+    type:'doughnut',
+    data:{labels,datasets:[{
+      data:vals,
+      backgroundColor:bgColors,
+      borderWidth:2,borderColor:'#fff',hoverOffset:8
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:12,family:'DM Sans'},color:C.muted,padding:16,
+          generateLabels:chart=>{
+            const d=chart.data;
+            return d.labels.map((label,i)=>({
+              text:`${label}  (${d.datasets[0].data[i]})`,
+              fillStyle:bgColors[i],strokeStyle:'#fff',lineWidth:2,index:i
+            }));
+          }
+        }},
+        tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:10,
+          callbacks:{label:ctx=>{
+            const pct=total?((ctx.parsed/total)*100).toFixed(1):'0';
+            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+          }}
+        }
+      },
+      cutout:'60%',
+      animation:{onComplete:function(){
+        // desenhar rótulo central com total
+        const{ctx,chartArea:{left,top,right,bottom}}=this;
+        const cx=(left+right)/2,cy=(top+bottom)/2;
+        ctx.save();
+        ctx.font='700 22px "DM Mono",monospace';
+        ctx.fillStyle=C.text||'#0d1412';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(total,cx,cy-8);
+        ctx.font='500 11px "DM Sans",sans-serif';
+        ctx.fillStyle=C.muted;
+        ctx.fillText('saídas',cx,cy+12);
+        ctx.restore();
+      }}
+    },
+    plugins:[genLabelPlugin]
+  });
+}
+
+function calcIdade(dtNasc,dtRef){
+  if(!dtNasc||!dtRef)return null;
+  let age=dtRef.getFullYear()-dtNasc.getFullYear();
+  const m=dtRef.getMonth()-dtNasc.getMonth();
+  if(m<0||(m===0&&dtRef.getDate()<dtNasc.getDate()))age--;
+  return age;
+}
+
+function buildIdade(desl){
+  const faixas=[
+    {label:'Até 20 anos',min:0,max:20},
+    {label:'21–30 anos',min:21,max:30},
+    {label:'31–40 anos',min:31,max:40},
+    {label:'41–50 anos',min:41,max:50},
+    {label:'51+ anos',min:51,max:999},
+    {label:'Não informado',min:-1,max:-1},
+  ];
+  const counts=Object.fromEntries(faixas.map(f=>[f.label,0]));
+
+  desl.forEach(r=>{
+    const idade=calcIdade(r.dtNasc, r.rescisao||new Date());
+    if(idade===null||isNaN(idade)){
+      counts['Não informado']++;
+    } else {
+      const f=faixas.find(x=>x.min!==-1&&idade>=x.min&&idade<=x.max);
+      if(f)counts[f.label]++;
+      else counts['Não informado']++;
+    }
+  });
+
+  // remover faixas zeradas (exceto Não informado se tiver dado)
+  const labels=faixas.map(f=>f.label).filter(l=>counts[l]>0);
+  const vals=labels.map(l=>counts[l]);
+  const total=vals.reduce((a,b)=>a+b,0);
+  const bgColors=['#0A6B2C','#2E86AB','#F4A261','#6A4C93','#1B998B','#aaa'];
+
+  kill('cIdade');
+  const idadeOpts=barOpts('');
+  idadeOpts.indexAxis='y';
+  idadeOpts.scales={
+    x:{grid:{color:C.grid},beginAtZero:true,ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+    y:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted}}
+  };
+  idadeOpts.plugins.tooltip={
+    backgroundColor:'#0d1412',cornerRadius:10,padding:10,
+    callbacks:{label:ctx=>{
+      const pct=total?((ctx.parsed.x/total)*100).toFixed(1):'0';
+      return ` ${ctx.parsed.x} pessoas (${pct}%)`;
+    }}
+  };
+  idadeOpts.animation={onComplete:function(){
+    const{ctx}=this;ctx.save();
+    ctx.font='600 11px "DM Sans",sans-serif';
+    ctx.textBaseline='middle';ctx.textAlign='left';
+    this.getDatasetMeta(0).data.forEach((bar,i)=>{
+      const val=vals[i];if(!val)return;
+      const pct=total?((val/total)*100).toFixed(1):'0';
+      const{x,y}=bar.getProps(['x','y'],true);
+      ctx.fillStyle=C.muted;
+      ctx.fillText(`${val}  (${pct}%)`,x+6,y);
+    });
+    ctx.restore();
+  }};
+
+  charts['cIdade']=new Chart(document.getElementById('cIdade'),{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:'Saídas',data:vals,
+      backgroundColor:labels.map((_,i)=>bgColors[i%bgColors.length]),
+      borderRadius:8,borderSkipped:false
+    }]},
+    options:idadeOpts
+  });
 }
 
 // ── EXPORT IMAGEM ────────────────────────────────────────────────
