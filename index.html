@@ -152,6 +152,34 @@ tr:hover td{background:var(--green-light)}
 .loja-opt:hover{background:var(--green-light)}
 .loja-opt input[type=checkbox]{accent-color:var(--green);width:13px;height:13px;cursor:pointer}
 
+/* META VS REAL */
+.meta-filters{background:var(--bg-soft);border:1.5px solid var(--green-border);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px}
+.meta-filters h3{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px}
+.meta-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.meta-tbl-card{background:white;border:1.5px solid var(--green-border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.meta-tbl-head{background:var(--green);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.meta-tbl-head .t{color:white;font-size:14px;font-weight:600}
+.meta-tbl-head .s{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+.meta-th-group{text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:6px 8px;border-bottom:1.5px solid var(--green-border)}
+.meta-th-group.lider{background:#e8f4ec;color:#0A6B2C}
+.meta-th-group.salao{background:#fff7e0;color:#966800}
+.meta-th-group.cozinha{background:#e8f0fa;color:#2E86AB}
+.meta-th-group.total{background:#f0eafa;color:#6A4C93}
+.meta-th-sub{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:5px 8px;text-align:center;border-bottom:1.5px solid var(--green-border);background:var(--bg-soft)}
+.meta-td{text-align:center;font-family:'DM Mono',monospace;font-size:12px;padding:9px 8px;border-bottom:1px solid #f0f4f2}
+.meta-td.real-ok{color:var(--green);font-weight:600}
+.meta-td.real-bad{color:var(--orange);font-weight:600}
+.meta-td.dif-pos{color:var(--green);font-weight:700}
+.meta-td.dif-neg{color:var(--orange);font-weight:700}
+.meta-td.dif-zero{color:var(--text-muted)}
+.meta-td-loja{padding:9px 12px;font-size:13px;font-weight:500;border-bottom:1px solid #f0f4f2;white-space:nowrap}
+.meta-total-row td{background:#0A0A0A!important;color:white!important;font-weight:700;font-family:'DM Mono',monospace;font-size:12px;padding:10px 8px;text-align:center}
+.meta-total-row .loja-cell{text-align:left;padding:10px 12px;font-size:13px}
+.dif-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.dif-badge.neg{background:var(--orange-light);color:var(--orange);border:1px solid rgba(255,80,40,.2)}
+.dif-badge.pos{background:var(--green-light);color:var(--green);border:1px solid var(--green-border)}
+.dif-badge.zero{background:#f0f0f0;color:#888}
+
 /* HEADCOUNT */
 .hc-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
 .hc-chart-h{position:relative;height:320px}
@@ -423,6 +451,63 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
       <div class="section-row"><div class="section-dot" style="background:var(--orange)"></div><span class="section-title">Tabela Resumo — Headcount por Centro de Custo / Mês</span></div>
       <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcCcTableHead"></tr></thead><tbody id="hcCcTableBody"></tbody></table></div></div>
 
+      <!-- META VS REAL -->
+      <div class="section-row" style="margin-top:20px">
+        <div class="section-dot" style="background:#6A4C93"></div>
+        <span class="section-title">Meta vs. Real — Headcount por Loja e Centro de Custo</span>
+      </div>
+
+      <div class="meta-filters">
+        <h3>Selecione o Mês</h3>
+        <div class="hist-row">
+          <div class="filter-group">
+            <span class="filter-label">Mês de Referência</span>
+            <select class="filter-select" id="metaMes" style="min-width:160px"></select>
+          </div>
+          <button class="apply-btn" onclick="applyMeta()">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- KPIs meta -->
+      <div class="meta-kpi-grid">
+        <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-label">Meta Total</div><div class="kpi-val" id="metaKpiMeta" style="color:#6A4C93">—</div><div style="font-size:11px;color:var(--text-muted);margin-top:8px">soma de todas as lojas</div></div>
+        <div class="kpi"><div class="kpi-icon">👥</div><div class="kpi-label">Real Total</div><div class="kpi-val" id="metaKpiReal">—</div><div style="font-size:11px;color:var(--text-muted);margin-top:8px">headcount atual</div></div>
+        <div class="kpi warn"><div class="kpi-icon">↕️</div><div class="kpi-label">Diferença</div><div class="kpi-val" id="metaKpiDif">—</div><div style="font-size:11px;color:var(--text-muted);margin-top:8px">real menos meta</div></div>
+        <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-label">Lojas na Meta</div><div class="kpi-val" id="metaKpiLojas" style="color:var(--green)">—</div><div style="font-size:11px;color:var(--text-muted);margin-top:8px" id="metaKpiLojasTotal">de — lojas</div></div>
+      </div>
+
+      <!-- Tabela Meta vs Real -->
+      <div class="meta-tbl-card">
+        <div class="meta-tbl-head">
+          <div><div class="t">Headcount por Loja — Meta vs. Real</div><div class="s" id="metaTblSubtitle">Selecione um mês</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.7)"><span style="width:8px;height:8px;border-radius:50%;background:var(--orange);display:inline-block"></span>Abaixo da meta</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.7)"><span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block"></span>Na meta</span>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="metaTable">
+            <thead>
+              <tr>
+                <th rowspan="2" style="vertical-align:middle;min-width:180px">Loja</th>
+                <th colspan="2" class="meta-th-group lider">Liderança</th>
+                <th colspan="2" class="meta-th-group salao">Salão</th>
+                <th colspan="2" class="meta-th-group cozinha">Cozinha</th>
+                <th colspan="2" class="meta-th-group total">Total</th>
+                <th rowspan="2" style="vertical-align:middle;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--bg-soft);padding:6px 10px">Dif</th>
+              </tr>
+              <tr>
+                <th class="meta-th-sub">Meta</th><th class="meta-th-sub">Real</th>
+                <th class="meta-th-sub">Meta</th><th class="meta-th-sub">Real</th>
+                <th class="meta-th-sub">Meta</th><th class="meta-th-sub">Real</th>
+                <th class="meta-th-sub">Meta</th><th class="meta-th-sub">Real</th>
+              </tr>
+            </thead>
+            <tbody id="metaTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -559,7 +644,7 @@ function initDash(origin='local'){
   } else {
     sb.style.display='none'; lb.style.display='flex';
   }
-  updateDBStatus();buildFilters();updateAnalise();buildHeadcountControls();buildImportHistory();
+  updateDBStatus();buildFilters();updateAnalise();buildHeadcountControls();buildMetaControls();buildImportHistory();
 }
 
 function updateDBStatus(){
@@ -957,9 +1042,139 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     document.querySelectorAll('.main>div[id^="tab-"]').forEach(x=>x.classList.add('hidden'));
     document.getElementById('tab-'+id).classList.remove('hidden');
     if(id==='historico'&&allRows.length)buildHistoricoControls();
-    if(id==='headcount'&&allRows.length)buildHeadcountControls();
+    if(id==='headcount'&&allRows.length){buildHeadcountControls();buildMetaControls();}
   });
 });
+
+
+const METAS = {
+  '26-CABANA GUARULHOS':      {lideranca:3, salao:11, cozinha:9},
+  '12-CABANA BRAZ LEME':      {lideranca:3, salao:9,  cozinha:9},
+  '27-CABANA MOOCA':          {lideranca:3, salao:6,  cozinha:6},
+  '32-CABANA TATUAPE':        {lideranca:3, salao:9,  cozinha:9},
+  '30-CABANA MORUMBI TOWN':   {lideranca:3, salao:7,  cozinha:7},
+  '08-CABANA OSCAR FREIRE':   {lideranca:4, salao:11, cozinha:12},
+  '22-CABANA PINHEIROS':      {lideranca:4, salao:13, cozinha:14},
+  '02-CABANA LEOPOLDO':       {lideranca:4, salao:12, cozinha:15},
+  '17-CABANA STO ANDRE':      {lideranca:3, salao:7,  cozinha:8},
+  '07-CABANA SHOP VL LOBOS':  {lideranca:3, salao:7,  cozinha:7},
+  '15-CABANA SHOP ELDORADO':  {lideranca:3, salao:7,  cozinha:8},
+  '11-CABANA ALPHAVILLE':     {lideranca:3, salao:10, cozinha:11},
+  '14-CABANA NITEROI':        {lideranca:3, salao:7,  cozinha:7},
+  '09-CABANA MOEMA':          {lideranca:4, salao:12, cozinha:15},
+  '24-CABANA RIB. PRETO':     {lideranca:3, salao:6,  cozinha:7},
+  '06-CABANA SHOP MORUMBI':   {lideranca:3, salao:10, cozinha:12},
+  '25-CABANA BARRA SHOP':     {lideranca:3, salao:12, cozinha:13},
+  '13-CABANA CAMPINAS':       {lideranca:3, salao:8,  cozinha:8},
+};
+
+// mapeamento Centro de Custo → coluna da meta
+const CC_META_MAP = {
+  'LIDERANÇA LOJA': 'lideranca',
+  'SALÃO E DELIVERY': 'salao',
+  'COZINHA E BAR': 'cozinha',
+};
+
+// ── META VS REAL ──────────────────────────────────────────────────
+function buildMetaControls(){
+  if(!allRows.length)return;
+  const periods=[...new Set([
+    ...allRows.map(r=>r.admissao).filter(Boolean).map(mKey),
+    ...allRows.map(r=>r.rescisao).filter(Boolean).map(mKey),
+  ])].sort().reverse();
+  const sel=document.getElementById('metaMes');
+  sel.innerHTML=periods.map(p=>`<option value="${p}">${mLbl(p)}</option>`).join('');
+  applyMeta();
+}
+
+function applyMeta(){
+  const period=document.getElementById('metaMes').value;
+  if(!period||!allRows.length)return;
+  const[Y,M]=period.split('-').map(Number);
+  const lastDay=new Date(Y,M,0);
+
+  document.getElementById('metaTblSubtitle').textContent=mLbl(period);
+
+  // calcular real por loja+cc no mês
+  const lojas=Object.keys(METAS);
+  let totalMeta=0,totalReal=0,lojasNaMeta=0;
+
+  const rows=lojas.map(loja=>{
+    const meta=METAS[loja];
+    const metaTotal=meta.lideranca+meta.salao+meta.cozinha;
+    totalMeta+=metaTotal;
+
+    // funcionários ativos na loja no mês
+    const ativos=allRows.filter(r=>{
+      // match por nome fantasia (busca parcial case-insensitive)
+      const nf=(r.loja||'').toUpperCase();
+      const nk=loja.toUpperCase();
+      return nf===nk && r.admissao && r.admissao<=lastDay && (!r.rescisao||r.rescisao>lastDay);
+    });
+
+    // real por CC
+    const realLider=ativos.filter(r=>{
+      const cc=(r.cc||'').toUpperCase();
+      return cc.includes('LIDER');
+    }).length;
+    const realSalao=ativos.filter(r=>{
+      const cc=(r.cc||'').toUpperCase();
+      return cc.includes('SALÃO')||cc.includes('SALAO')||cc.includes('DELIVERY');
+    }).length;
+    const realCozinha=ativos.filter(r=>{
+      const cc=(r.cc||'').toUpperCase();
+      return cc.includes('COZINHA')||cc.includes('BAR');
+    }).length;
+    const realTotal=ativos.length;
+    totalReal+=realTotal;
+    if(realTotal>=metaTotal)lojasNaMeta++;
+
+    return{loja,meta,metaTotal,realLider,realSalao,realCozinha,realTotal};
+  });
+
+  // KPIs
+  const dif=totalReal-totalMeta;
+  document.getElementById('metaKpiMeta').textContent=totalMeta;
+  document.getElementById('metaKpiReal').textContent=totalReal;
+  const difEl=document.getElementById('metaKpiDif');
+  difEl.textContent=(dif>0?'+':'')+dif;
+  difEl.style.color=dif>=0?'var(--green)':'var(--orange)';
+  document.getElementById('metaKpiLojas').textContent=lojasNaMeta;
+  document.getElementById('metaKpiLojasTotal').textContent=`de ${lojas.length} lojas`;
+
+  // Tabela
+  const mkTd=(meta,real)=>{
+    const cls=real>=meta?'real-ok':'real-bad';
+    return`<td class="meta-td">${meta}</td><td class="meta-td ${cls}">${real}</td>`;
+  };
+  const difTotal=rows.reduce((s,r)=>s+(r.realTotal-r.metaTotal),0);
+
+  document.getElementById('metaTableBody').innerHTML=rows.map(({loja,meta,metaTotal,realLider,realSalao,realCozinha,realTotal})=>{
+    const d=realTotal-metaTotal;
+    const difCls=d>0?'dif-badge pos':d<0?'dif-badge neg':'dif-badge zero';
+    const difTxt=(d>0?'+':'')+d;
+    return`<tr>
+      <td class="meta-td-loja">${loja}</td>
+      ${mkTd(meta.lideranca,realLider)}
+      ${mkTd(meta.salao,realSalao)}
+      ${mkTd(meta.cozinha,realCozinha)}
+      ${mkTd(metaTotal,realTotal)}
+      <td class="meta-td"><span class="${difCls}">${difTxt}</span></td>
+    </tr>`;
+  }).join('')+`
+  <tr class="meta-total-row">
+    <td class="loja-cell">TOTAL GERAL</td>
+    <td>${rows.reduce((s,r)=>s+r.meta.lideranca,0)}</td>
+    <td style="color:${rows.reduce((s,r)=>s+r.realLider,0)>=rows.reduce((s,r)=>s+r.meta.lideranca,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realLider,0)}</td>
+    <td>${rows.reduce((s,r)=>s+r.meta.salao,0)}</td>
+    <td style="color:${rows.reduce((s,r)=>s+r.realSalao,0)>=rows.reduce((s,r)=>s+r.meta.salao,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realSalao,0)}</td>
+    <td>${rows.reduce((s,r)=>s+r.meta.cozinha,0)}</td>
+    <td style="color:${rows.reduce((s,r)=>s+r.realCozinha,0)>=rows.reduce((s,r)=>s+r.meta.cozinha,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realCozinha,0)}</td>
+    <td>${totalMeta}</td>
+    <td style="color:${totalReal>=totalMeta?'#4ade80':'#FF5028'}">${totalReal}</td>
+    <td><span class="${dif>0?'dif-badge pos':dif<0?'dif-badge neg':'dif-badge zero'}">${(dif>0?'+':'')+dif}</span></td>
+  </tr>`;
+}
 
 // ── HEADCOUNT ────────────────────────────────────────────────────
 function buildHeadcountControls(){
