@@ -229,7 +229,6 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
 
 <nav class="nav-tabs">
   <div class="nav-tab active" data-tab="analise">📊 Análise do Período</div>
-  <div class="nav-tab" data-tab="historico">📈 Evolução Histórica</div>
   <div class="nav-tab" data-tab="headcount">👥 Headcount</div>
   <div class="nav-tab" data-tab="dados">🗄 Importações</div>
 </nav>
@@ -260,6 +259,32 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
         <div class="db-actions">
           <button class="db-btn" onclick="document.getElementById('fileInput').click()" title="Carrega localmente (só você vê). Para todos verem, suba o arquivo no GitHub.">↑ Visualizar nova base</button>
           <button class="db-btn danger" onclick="clearDB()">🗑 Limpar cache local</button>
+        </div>
+      </div>
+
+      <!-- PAINEL DE GENTE -->
+      <div id="painelGente" class="hidden" style="margin-bottom:20px">
+        <div class="section-row"><div class="section-dot"></div><span class="section-title">Painel de Gente — Visão Geral</span></div>
+
+        <!-- KPIs Painel -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px" id="painelKpis"></div>
+
+        <!-- Gráfico Meta x Real 12 meses -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-header"><div><div class="card-title">Meta vs. Real — Headcount Total (LTM)</div><div class="card-sub">Últimos 12 meses · todas as lojas</div></div><span class="tag" style="background:#f0eafa;color:#6A4C93;border-color:#d8c8f0">Quadro</span></div>
+          <div class="card-body"><div style="position:relative;height:220px"><canvas id="cPainelLtm"></canvas></div></div>
+        </div>
+
+        <!-- Gráfico Meta x Real por Área -->
+        <div class="charts-2b" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Meta vs. Real por Área</div><div class="card-sub">Mês atual · Cozinha · Salão · Liderança</div></div><span class="tag orange">Áreas</span></div>
+            <div class="card-body"><div style="position:relative;height:200px"><canvas id="cPainelArea"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">% Atingimento por Área</div><div class="card-sub">Real ÷ Meta × 100</div></div><span class="tag">% Meta</span></div>
+            <div class="card-body"><div style="position:relative;height:200px"><canvas id="cPainelPct"></canvas></div></div>
+          </div>
         </div>
       </div>
 
@@ -328,52 +353,6 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
         <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Loja</th><th>Dt Admissão</th><th>Dt Rescisão</th><th>Tempo de Casa</th><th>Faixa</th><th>Motivo</th></tr></thead><tbody id="tblBody"><tr><td colspan="8" class="empty">Selecione um período.</td></tr></tbody></table></div>
       </div>
 
-    </div>
-  </div>
-
-  <!-- ══ TAB HISTÓRICO ══ -->
-  <div id="tab-historico" class="hidden">
-    <div id="histEmpty" class="empty" style="padding:60px"><div style="font-size:36px;margin-bottom:12px">📈</div><p>Importe pelo menos uma base para ver a evolução histórica.</p></div>
-    <div id="histContent" class="hidden">
-      <div class="hist-controls">
-        <h3>Filtros da Evolução Histórica</h3>
-        <div class="hist-row">
-          <div>
-            <div class="filter-label" style="margin-bottom:5px">Empresas / Lojas</div>
-            <div class="multi-box">
-              <div class="multi-hdr"><span>Selecione as lojas</span><span class="sel-all" id="selAllBtn" onclick="toggleAll()">Selecionar todas</span></div>
-              <div class="multi-body" id="empresasList"></div>
-            </div>
-          </div>
-          <div class="range-group">
-            <div class="filter-label">Período</div>
-            <div class="range-row">
-              <select class="range-sel" id="rangeFrom"></select>
-              <span class="range-sep">até</span>
-              <select class="range-sel" id="rangeTo"></select>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Intervalo de meses para comparação</div>
-          </div>
-          <button class="apply-btn" onclick="applyHistorico()">Aplicar</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><div><div class="card-title">Evolução do Turnover por Empresa</div><div class="card-sub">Comparativo mensal entre unidades selecionadas</div></div><span class="tag">Histórico</span></div>
-        <div class="leg-pills" id="histLegend"></div>
-        <div class="card-body"><div class="hist-chart-h"><canvas id="cHistorico"></canvas></div></div>
-      </div>
-
-      <div class="section-row">
-        <div class="section-dot"></div>
-        <span class="section-title">Tabela Resumo — Turnover % por Empresa / Mês</span>
-        <button class="export-btn" id="exportHistBtn" onclick="exportTableAsImage('histExportWrapper','Turnover_Historico')" style="margin-left:auto">
-          ⬇ Exportar como imagem
-        </button>
-      </div>
-      <div id="histExportWrapper">
-        <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="histHead"></tr></thead><tbody id="histBody"></tbody></table></div></div>
-      </div>
     </div>
   </div>
 
@@ -450,6 +429,10 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
 
       <div class="section-row"><div class="section-dot" style="background:var(--orange)"></div><span class="section-title">Tabela Resumo — Headcount por Centro de Custo / Mês</span></div>
       <div class="tbl-card"><div class="tbl-wrap"><table><thead><tr id="hcCcTableHead"></tr></thead><tbody id="hcCcTableBody"></tbody></table></div></div>
+
+      <!-- Lista de pessoas por CC -->
+      <div class="section-row" style="margin-top:20px"><div class="section-dot" style="background:#2E86AB"></div><span class="section-title">Pessoas Ativas por Centro de Custo</span><span style="font-size:11px;color:var(--text-muted);margin-left:8px">último mês do filtro</span></div>
+      <div id="hcPessoasCC"></div>
 
       <!-- META VS REAL -->
       <div class="section-row" style="margin-top:20px">
@@ -755,12 +738,12 @@ function updateAnalise(){
   const ab=document.getElementById('alertBox');
   if(early.length){ab.classList.remove('hidden');document.getElementById('alertMsg').textContent=`${early.length} desligamento(s) com menos de 90 dias de casa — atenção ao período de experiência!`;}
   else ab.classList.add('hidden');
-  buildEvolucao(data,period);buildDonut(desl);buildMotivos(desl);buildFluxo(data,period);buildTable(desl);buildPerfil(desl);
+  buildEvolucao(data,period);buildDonut(desl);buildMotivos(desl);buildFluxo(data,period);buildTable(desl);buildPerfil(desl);buildPainelGente(period,data);
 }
 
 function buildEvolucao(data,cur){
   const labels=[],vals=[];
-  for(let i=5;i>=0;i--){
+  for(let i=11;i>=0;i--){
     const k=offM(cur,-i),[Y,M]=k.split('-').map(Number);
     const fd=new Date(Y,M-1,1),ld=new Date(Y,M,0);
     const at=data.filter(r=>r.admissao&&r.admissao<=ld&&(!r.rescisao||r.rescisao>ld));
@@ -840,7 +823,7 @@ function buildMotivos(desl){
 
 function buildFluxo(data,cur){
   const labels=[],ads=[],des=[];
-  for(let i=5;i>=0;i--){
+  for(let i=11;i>=0;i--){
     const k=offM(cur,-i),[Y,M]=k.split('-').map(Number);
     const fd=new Date(Y,M-1,1),ld=new Date(Y,M,0);
     ads.push(data.filter(r=>r.admissao&&r.admissao>=fd&&r.admissao<=ld).length);
@@ -1064,7 +1047,7 @@ const METAS = {
   '09-CABANA MOEMA':          {lideranca:4, salao:12, cozinha:15},
   '24-CABANA RIB. PRETO':     {lideranca:3, salao:6,  cozinha:7},
   '06-CABANA SHOP MORUMBI':   {lideranca:3, salao:10, cozinha:12},
-  '25-CABANA BARRA SHOP':     {lideranca:3, salao:12, cozinha:13},
+  '05-CABANA BARRA SHOP':     {lideranca:3, salao:12, cozinha:13},
   '13-CABANA CAMPINAS':       {lideranca:3, salao:8,  cozinha:8},
 };
 
@@ -1074,6 +1057,142 @@ const CC_META_MAP = {
   'SALÃO E DELIVERY': 'salao',
   'COZINHA E BAR': 'cozinha',
 };
+
+// ── PAINEL DE GENTE ──────────────────────────────────────────────
+function buildPainelGente(period, data){
+  const[Y,M]=period.split('-').map(Number);
+  const lastDay=new Date(Y,M,0);
+
+  // calcular meta total de todas as lojas
+  const metaTotal=Object.values(METAS).reduce((s,m)=>s+m.lideranca+m.salao+m.cozinha,0);
+  const metaLider=Object.values(METAS).reduce((s,m)=>s+m.lideranca,0);
+  const metaSalao=Object.values(METAS).reduce((s,m)=>s+m.salao,0);
+  const metaCoz=Object.values(METAS).reduce((s,m)=>s+m.cozinha,0);
+
+  // real atual
+  const ativos=data.filter(r=>r.admissao&&r.admissao<=lastDay&&(!r.rescisao||r.rescisao>lastDay));
+  const realTotal=ativos.length;
+  const realLider=ativos.filter(r=>(r.cc||'').toUpperCase().includes('LIDER')).length;
+  const realSalao=ativos.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('SALÃO')||cc.includes('SALAO')||cc.includes('DELIVERY');}).length;
+  const realCoz=ativos.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('COZINHA')||cc.includes('BAR');}).length;
+  const pct=metaTotal?((realTotal/metaTotal)*100).toFixed(1):0;
+  const dif=realTotal-metaTotal;
+
+  // mostrar painel
+  document.getElementById('painelGente').classList.remove('hidden');
+
+  // KPIs
+  const kpis=[
+    {label:'Meta Quadro',val:metaTotal,color:'#6A4C93',icon:'🎯'},
+    {label:'Real Quadro',val:realTotal,color:realTotal>=metaTotal?'var(--green)':'var(--orange)',icon:'👥'},
+    {label:'% Atingimento',val:pct+'%',color:realTotal>=metaTotal?'var(--green)':'var(--orange)',icon:'📊'},
+    {label:'Diferença',val:(dif>0?'+':'')+dif,color:dif>=0?'var(--green)':'var(--orange)',icon:'↕️'},
+    {label:'Mês',val:mLbl(period),color:'var(--text-muted)',icon:'📅'},
+  ];
+  document.getElementById('painelKpis').innerHTML=kpis.map(k=>`
+    <div class="kpi" style="padding:14px">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div style="font-size:24px;font-weight:700;letter-spacing:-1px;color:${k.color};font-family:'DM Mono',monospace;line-height:1;margin-top:6px">${k.val}</div>
+    </div>`).join('');
+
+  // Gráfico LTM Meta x Real
+  const months=[];
+  for(let i=11;i>=0;i--) months.push(offM(period,-i));
+  const ltmMeta=[],ltmReal=[];
+  months.forEach(k=>{
+    const[ky,km]=k.split('-').map(Number),ld=new Date(ky,km,0);
+    ltmReal.push(data.filter(r=>r.admissao&&r.admissao<=ld&&(!r.rescisao||r.rescisao>ld)).length);
+    ltmMeta.push(metaTotal);
+  });
+
+  kill('cPainelLtm');
+  charts['cPainelLtm']=new Chart(document.getElementById('cPainelLtm'),{
+    type:'bar',
+    data:{labels:months.map(mLbl),datasets:[
+      {label:'Meta',data:ltmMeta,backgroundColor:'rgba(106,76,147,.15)',borderColor:'#6A4C93',borderWidth:2,type:'line',fill:false,tension:.3,pointRadius:3,order:1},
+      {label:'Real',data:ltmReal,backgroundColor:ltmReal.map(v=>v>=metaTotal?C.greenL:C.orangeLight||'rgba(255,80,40,.15)'),borderColor:ltmReal.map(v=>v>=metaTotal?C.green:C.orange),borderWidth:1.5,borderRadius:6,borderSkipped:false,order:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},color:C.muted}},
+        tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:10}},
+      scales:{
+        x:{grid:{color:C.grid},ticks:{font:{size:10,family:'DM Sans'},color:C.muted}},
+        y:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted},
+          suggestedMin:Math.max(0,metaTotal*0.8),suggestedMax:metaTotal*1.15}
+      }
+    }
+  });
+
+  // Gráfico por Área: Meta x Real barras agrupadas
+  kill('cPainelArea');
+  charts['cPainelArea']=new Chart(document.getElementById('cPainelArea'),{
+    type:'bar',
+    data:{
+      labels:['Liderança','Salão e Delivery','Cozinha e Bar'],
+      datasets:[
+        {label:'Meta',data:[metaLider,metaSalao,metaCoz],backgroundColor:'rgba(106,76,147,.2)',borderColor:'#6A4C93',borderWidth:2,borderRadius:6,borderSkipped:false},
+        {label:'Real',data:[realLider,realSalao,realCoz],backgroundColor:[
+          realLider>=metaLider?C.greenL:'rgba(255,80,40,.15)',
+          realSalao>=metaSalao?C.greenL:'rgba(255,80,40,.15)',
+          realCoz>=metaCoz?C.greenL:'rgba(255,80,40,.15)',
+        ],borderColor:[
+          realLider>=metaLider?C.green:C.orange,
+          realSalao>=metaSalao?C.green:C.orange,
+          realCoz>=metaCoz?C.green:C.orange,
+        ],borderWidth:2,borderRadius:6,borderSkipped:false},
+      ]
+    },
+    options:{...barOpts(''),animation:{onComplete:function(){drawBarLabels(this,'x');}}}
+  });
+
+  // Gráfico % atingimento por área
+  const pcts=[
+    metaLider?+((realLider/metaLider)*100).toFixed(1):0,
+    metaSalao?+((realSalao/metaSalao)*100).toFixed(1):0,
+    metaCoz?+((realCoz/metaCoz)*100).toFixed(1):0,
+  ];
+  kill('cPainelPct');
+  charts['cPainelPct']=new Chart(document.getElementById('cPainelPct'),{
+    type:'bar',
+    data:{
+      labels:['Liderança','Salão e Delivery','Cozinha e Bar'],
+      datasets:[{
+        label:'% Atingimento',
+        data:pcts,
+        backgroundColor:pcts.map(v=>v>=100?C.greenL:'rgba(255,80,40,.15)'),
+        borderColor:pcts.map(v=>v>=100?C.green:C.orange),
+        borderWidth:2,borderRadius:6,borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:10,callbacks:{label:ctx=>` ${ctx.parsed.y}%`}}},
+      scales:{
+        x:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+        y:{grid:{color:C.grid},beginAtZero:true,max:120,ticks:{font:{size:11,family:'DM Sans'},color:C.muted,callback:v=>v+'%'}}
+      },
+      animation:{onComplete:function(){
+        const{ctx}=this;ctx.save();
+        ctx.font='700 12px "DM Sans",sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+        this.getDatasetMeta(0).data.forEach((bar,i)=>{
+          const v=pcts[i];
+          ctx.fillStyle=v>=100?C.green:C.orange;
+          ctx.fillText(v+'%',bar.x,bar.y-5);
+        });
+        // linha 100%
+        const yScale=this.scales.y;
+        const y100=yScale.getPixelForValue(100);
+        ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(10,107,44,.35)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(this.chartArea.left,y100);ctx.lineTo(this.chartArea.right,y100);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font='500 10px "DM Sans",sans-serif';ctx.fillStyle='var(--green)';ctx.textAlign='right';
+        ctx.fillText('100%',this.chartArea.right,y100-4);
+        ctx.restore();
+      }}
+    }
+  });
+}
 
 // ── META VS REAL ──────────────────────────────────────────────────
 function buildMetaControls(){
@@ -1358,6 +1477,7 @@ function applyHeadcount(){
   window._hcCcSort={col:0,dir:'none'};
   renderHcCcTable(0,'none');
   buildHcCcLineChart(selCcs,months,data);
+  buildHcPessoasCC(selCcs,selLojas,data,lastMonth);
 }
 
 function renderHcTable(sortCol,sortDir){
@@ -1465,6 +1585,54 @@ function buildHcCcLineChart(selCcs,months,data){
   document.getElementById('hcCcLineLegend').innerHTML=datasets.map((ds,i)=>
     `<div class="leg-pill"><div class="leg-dot" style="background:${ds.borderColor}"></div>${ds.label}</div>`
   ).join('');
+}
+
+function buildHcPessoasCC(selCcs,selLojas,data,lastMonth){
+  const[lY,lM]=lastMonth.split('-').map(Number),lastDay=new Date(lY,lM,0);
+  const CC_COLORS=['#FF5028','#0A6B2C','#2E86AB','#F4A261','#6A4C93','#1B998B'];
+  const container=document.getElementById('hcPessoasCC');
+  if(!container)return;
+
+  const ativos=data.filter(r=>r.admissao&&r.admissao<=lastDay&&(!r.rescisao||r.rescisao>lastDay));
+  let html='';
+
+  selCcs.forEach((cc,idx)=>{
+    const pessoas=ativos.filter(r=>r.cc===cc).sort((a,b)=>(a.loja||'').localeCompare(b.loja||'')||(a.nome||'').localeCompare(b.nome||''));
+    if(!pessoas.length)return;
+    const color=CC_COLORS[idx%CC_COLORS.length];
+    html+=`
+    <div class="tbl-card" style="margin-bottom:14px">
+      <div class="tbl-head" style="background:${color}">
+        <div>
+          <div class="t">${cc}</div>
+          <div class="s">${pessoas.length} pessoa${pessoas.length!==1?'s':''} ativa${pessoas.length!==1?'s':''} em ${mLbl(lastMonth)}</div>
+        </div>
+        <div class="badge">${pessoas.length}</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Nome</th><th>Cargo</th><th>Loja</th><th>Dt Admissão</th><th>Tempo de Casa</th>
+          </tr></thead>
+          <tbody>
+            ${pessoas.map((p,i)=>{
+              const dias=p.admissao?ddiff(p.admissao,lastDay):null;
+              return`<tr>
+                <td style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+                <td><strong>${p.nome||'—'}</strong></td>
+                <td>${p.cargo||'—'}</td>
+                <td>${p.loja||'—'}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:12px">${fmt(p.admissao)}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:12px">${dias!==null?fmtD(dias):'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML=html||`<div class="empty">Nenhuma pessoa ativa para os centros selecionados.</div>`;
 }
 
 function renderHcCcTable(sortCol,sortDir){
