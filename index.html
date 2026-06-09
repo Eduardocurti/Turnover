@@ -252,13 +252,13 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
         ✅ <strong>Base carregada do repositório</strong> — todos os usuários do link estão vendo os mesmos dados. Para atualizar, substitua o arquivo <code>data/dados.xlsx</code> no GitHub.
       </div>
       <div id="localBanner" class="hidden" style="background:#FAECE7;border:1.5px solid rgba(255,80,40,.2);border-radius:var(--radius-sm);padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--orange);display:flex;align-items:center;gap:8px">
-        ⚠️ <strong>Visualização local</strong> — estes dados são visíveis apenas no seu navegador. Para compartilhar, suba o arquivo <code>data/dados.xlsx</code> no GitHub.
+        💾 <strong>Base carregada localmente</strong> — dados salvos no seu navegador. Uma nova importação substituirá esta base. Para compartilhar com todos, suba o arquivo <code>data/dados.xlsx</code> no GitHub.
       </div>
       <div class="db-bar">
         <div class="db-info"><div class="db-dot"></div><span id="dbInfo">—</span></div>
         <div class="db-actions">
-          <button class="db-btn" onclick="document.getElementById('fileInput').click()" title="Carrega localmente (só você vê). Para todos verem, suba o arquivo no GitHub.">↑ Visualizar nova base</button>
-          <button class="db-btn danger" onclick="clearDB()">🗑 Limpar cache local</button>
+          <button class="db-btn" onclick="document.getElementById('fileInput').click()" title="Importa e salva localmente. A base atual será substituída.">↑ Importar nova base</button>
+          <button class="db-btn danger" onclick="clearDB()">🗑 Limpar base salva</button>
         </div>
       </div>
 
