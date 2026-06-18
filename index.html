@@ -1245,86 +1245,157 @@ function applyMeta(){
   const[Y,M]=period.split('-').map(Number);
   const lastDay=new Date(Y,M,0);
 
-  document.getElementById('metaTblSubtitle').textContent=mLbl(period);
+  // lojas selecionadas no filtro
+  const selLojas=metaGetSelected();
+  if(!selLojas.length)return;
 
-  // calcular real por loja+cc no mês
-  const lojas=Object.keys(METAS);
-  let totalMeta=0,totalReal=0,lojasNaMeta=0;
+  document.getElementById('metaTblSubtitle').textContent=`${mLbl(period)} · ${selLojas.length} loja(s)`;
 
-  const rows=lojas.map(loja=>{
-    const meta=METAS[loja];
-    const metaTotal=meta.lideranca+meta.salao+meta.cozinha;
-    totalMeta+=metaTotal;
+  // metas das lojas selecionadas
+  const metaTotal=selLojas.reduce((s,l)=>s+(METAS[l]?METAS[l].lideranca+METAS[l].salao+METAS[l].cozinha:0),0);
+  const metaLider=selLojas.reduce((s,l)=>s+(METAS[l]?METAS[l].lideranca:0),0);
+  const metaSalao=selLojas.reduce((s,l)=>s+(METAS[l]?METAS[l].salao:0),0);
+  const metaCoz  =selLojas.reduce((s,l)=>s+(METAS[l]?METAS[l].cozinha:0),0);
 
-    // funcionários ativos na loja no mês
-    const ativos=allRows.filter(r=>{
-      // match por nome fantasia (busca parcial case-insensitive)
-      const nf=(r.loja||'').toUpperCase();
-      const nk=loja.toUpperCase();
-      return nf===nk && r.admissao && r.admissao<=lastDay && (!r.rescisao||r.rescisao>lastDay);
-    });
-
-    // real por CC
-    const realLider=ativos.filter(r=>{
-      const cc=(r.cc||'').toUpperCase();
-      return cc.includes('LIDER');
-    }).length;
-    const realSalao=ativos.filter(r=>{
-      const cc=(r.cc||'').toUpperCase();
-      return cc.includes('SALÃO')||cc.includes('SALAO')||cc.includes('DELIVERY');
-    }).length;
-    const realCozinha=ativos.filter(r=>{
-      const cc=(r.cc||'').toUpperCase();
-      return cc.includes('COZINHA')||cc.includes('BAR');
-    }).length;
-    const realTotal=ativos.length;
-    totalReal+=realTotal;
-    if(realTotal>=metaTotal)lojasNaMeta++;
-
-    return{loja,meta,metaTotal,realLider,realSalao,realCozinha,realTotal};
-  });
+  // real: apenas funcionários das lojas selecionadas
+  const dataFilt=allRows.filter(r=>selLojas.includes(r.loja));
+  const ativos=dataFilt.filter(r=>r.admissao&&r.admissao<=lastDay&&(!r.rescisao||r.rescisao>lastDay));
+  const realTotal=ativos.length;
+  const realLider=ativos.filter(r=>(r.cc||'').toUpperCase().includes('LIDER')).length;
+  const realSalao=ativos.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('SALÃO')||cc.includes('SALAO')||cc.includes('DELIVERY');}).length;
+  const realCoz=ativos.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('COZINHA')||cc.includes('BAR');}).length;
+  const dif=realTotal-metaTotal;
+  const pct=metaTotal?((realTotal/metaTotal)*100).toFixed(1):0;
 
   // KPIs
-  const dif=totalReal-totalMeta;
-  document.getElementById('metaKpiMeta').textContent=totalMeta;
-  document.getElementById('metaKpiReal').textContent=totalReal;
+  document.getElementById('metaKpiMeta').textContent=metaTotal;
+  document.getElementById('metaKpiReal').textContent=realTotal;
   const difEl=document.getElementById('metaKpiDif');
   difEl.textContent=(dif>0?'+':'')+dif;
   difEl.style.color=dif>=0?'var(--green)':'var(--orange)';
+
+  const lojasNaMeta=selLojas.filter(l=>{
+    const m=METAS[l]; if(!m) return false;
+    const mt=m.lideranca+m.salao+m.cozinha;
+    const rt=dataFilt.filter(r=>r.loja===l&&r.admissao&&r.admissao<=lastDay&&(!r.rescisao||r.rescisao>lastDay)).length;
+    return rt>=mt;
+  }).length;
   document.getElementById('metaKpiLojas').textContent=lojasNaMeta;
-  document.getElementById('metaKpiLojasTotal').textContent=`de ${lojas.length} lojas`;
+  document.getElementById('metaKpiLojasTotal').textContent=`de ${selLojas.length} lojas`;
 
-  // Tabela
-  const mkTd=(meta,real)=>{
-    const cls=real>=meta?'real-ok':'real-bad';
-    return`<td class="meta-td">${meta}</td><td class="meta-td ${cls}">${real}</td>`;
-  };
-  const difTotal=rows.reduce((s,r)=>s+(r.realTotal-r.metaTotal),0);
+  // Gráfico LTM
+  const months=[];
+  for(let i=11;i>=0;i--) months.push(offM(period,-i));
+  const ltmReal=months.map(k=>{
+    const[ky,km]=k.split('-').map(Number),ld=new Date(ky,km,0);
+    return dataFilt.filter(r=>r.admissao&&r.admissao<=ld&&(!r.rescisao||r.rescisao>ld)).length;
+  });
 
-  document.getElementById('metaTableBody').innerHTML=rows.map(({loja,meta,metaTotal,realLider,realSalao,realCozinha,realTotal})=>{
-    const d=realTotal-metaTotal;
-    const difCls=d>0?'dif-badge pos':d<0?'dif-badge neg':'dif-badge zero';
-    const difTxt=(d>0?'+':'')+d;
+  kill('cPainelLtm');
+  charts['cPainelLtm']=new Chart(document.getElementById('cPainelLtm'),{
+    type:'bar',
+    data:{labels:months.map(mLbl),datasets:[
+      {label:'Meta',data:months.map(()=>metaTotal),backgroundColor:'rgba(106,76,147,.15)',borderColor:'#6A4C93',borderWidth:2,type:'line',fill:false,tension:.3,pointRadius:3,order:1},
+      {label:'Real',data:ltmReal,backgroundColor:ltmReal.map(v=>v>=metaTotal?C.greenL:'rgba(255,80,40,.15)'),borderColor:ltmReal.map(v=>v>=metaTotal?C.green:C.orange),borderWidth:1.5,borderRadius:6,borderSkipped:false,order:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},color:C.muted}},tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:10}},
+      scales:{
+        x:{grid:{color:C.grid},ticks:{font:{size:10,family:'DM Sans'},color:C.muted}},
+        y:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted},suggestedMin:Math.max(0,metaTotal*0.8),suggestedMax:metaTotal*1.15}
+      }
+    }
+  });
+
+  // Gráfico por área
+  kill('cPainelArea');
+  charts['cPainelArea']=new Chart(document.getElementById('cPainelArea'),{
+    type:'bar',
+    data:{labels:['Liderança','Salão e Delivery','Cozinha e Bar'],datasets:[
+      {label:'Meta',data:[metaLider,metaSalao,metaCoz],backgroundColor:'rgba(106,76,147,.2)',borderColor:'#6A4C93',borderWidth:2,borderRadius:6,borderSkipped:false},
+      {label:'Real',data:[realLider,realSalao,realCoz],
+        backgroundColor:[realLider>=metaLider?C.greenL:'rgba(255,80,40,.15)',realSalao>=metaSalao?C.greenL:'rgba(255,80,40,.15)',realCoz>=metaCoz?C.greenL:'rgba(255,80,40,.15)'],
+        borderColor:[realLider>=metaLider?C.green:C.orange,realSalao>=metaSalao?C.green:C.orange,realCoz>=metaCoz?C.green:C.orange],
+        borderWidth:2,borderRadius:6,borderSkipped:false},
+    ]},
+    options:{...barOpts(''),animation:{onComplete:function(){drawBarLabels(this,'x');}}}
+  });
+
+  // Gráfico % atingimento
+  const pcts=[
+    metaLider?+((realLider/metaLider)*100).toFixed(1):0,
+    metaSalao?+((realSalao/metaSalao)*100).toFixed(1):0,
+    metaCoz?+((realCoz/metaCoz)*100).toFixed(1):0,
+  ];
+  kill('cPainelPct');
+  charts['cPainelPct']=new Chart(document.getElementById('cPainelPct'),{
+    type:'bar',
+    data:{labels:['Liderança','Salão e Delivery','Cozinha e Bar'],datasets:[{
+      label:'% Atingimento',data:pcts,
+      backgroundColor:pcts.map(v=>v>=100?C.greenL:'rgba(255,80,40,.15)'),
+      borderColor:pcts.map(v=>v>=100?C.green:C.orange),
+      borderWidth:2,borderRadius:6,borderSkipped:false
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1412',cornerRadius:10,padding:10,callbacks:{label:ctx=>` ${ctx.parsed.y}%`}}},
+      scales:{
+        x:{grid:{color:C.grid},ticks:{font:{size:11,family:'DM Sans'},color:C.muted}},
+        y:{grid:{color:C.grid},beginAtZero:true,max:120,ticks:{font:{size:11,family:'DM Sans'},color:C.muted,callback:v=>v+'%'}}
+      },
+      animation:{onComplete:function(){
+        const{ctx}=this;ctx.save();
+        ctx.font='700 12px "DM Sans",sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+        this.getDatasetMeta(0).data.forEach((bar,i)=>{
+          const v=pcts[i];ctx.fillStyle=v>=100?C.green:C.orange;ctx.fillText(v+'%',bar.x,bar.y-5);
+        });
+        const y100=this.scales.y.getPixelForValue(100);
+        ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(10,107,44,.35)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(this.chartArea.left,y100);ctx.lineTo(this.chartArea.right,y100);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font='500 10px "DM Sans",sans-serif';ctx.fillStyle='var(--green)';ctx.textAlign='right';
+        ctx.fillText('100%',this.chartArea.right,y100-4);
+        ctx.restore();
+      }}
+    }
+  });
+
+  // Tabela — apenas lojas selecionadas
+  const rows=selLojas.map(loja=>{
+    const meta=METAS[loja];if(!meta)return null;
+    const metaT=meta.lideranca+meta.salao+meta.cozinha;
+    const at=dataFilt.filter(r=>r.loja===loja&&r.admissao&&r.admissao<=lastDay&&(!r.rescisao||r.rescisao>lastDay));
+    const rL=at.filter(r=>(r.cc||'').toUpperCase().includes('LIDER')).length;
+    const rS=at.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('SALÃO')||cc.includes('SALAO')||cc.includes('DELIVERY');}).length;
+    const rC=at.filter(r=>{const cc=(r.cc||'').toUpperCase();return cc.includes('COZINHA')||cc.includes('BAR');}).length;
+    const rT=at.length;
+    return{loja,meta,metaT,rL,rS,rC,rT};
+  }).filter(Boolean);
+
+  const mkTd=(m,r)=>`<td class="meta-td">${m}</td><td class="meta-td ${r>=m?'real-ok':'real-bad'}">${r}</td>`;
+  const totMt=rows.reduce((s,r)=>s+r.metaT,0);
+  const totRt=rows.reduce((s,r)=>s+r.rT,0);
+  const totDif=totRt-totMt;
+  const sumRL=rows.reduce((s,r)=>s+r.rL,0);
+  const sumRS=rows.reduce((s,r)=>s+r.rS,0);
+  const sumRC=rows.reduce((s,r)=>s+r.rC,0);
+
+  document.getElementById('metaTableBody').innerHTML=rows.map(({loja,meta,metaT,rL,rS,rC,rT})=>{
+    const d=rT-metaT;
+    const dc=d>0?'dif-badge pos':d<0?'dif-badge neg':'dif-badge zero';
     return`<tr>
       <td class="meta-td-loja">${loja}</td>
-      ${mkTd(meta.lideranca,realLider)}
-      ${mkTd(meta.salao,realSalao)}
-      ${mkTd(meta.cozinha,realCozinha)}
-      ${mkTd(metaTotal,realTotal)}
-      <td class="meta-td"><span class="${difCls}">${difTxt}</span></td>
+      ${mkTd(meta.lideranca,rL)}${mkTd(meta.salao,rS)}${mkTd(meta.cozinha,rC)}${mkTd(metaT,rT)}
+      <td class="meta-td"><span class="${dc}">${(d>0?'+':'')+d}</span></td>
     </tr>`;
   }).join('')+`
   <tr class="meta-total-row">
-    <td class="loja-cell">TOTAL GERAL</td>
-    <td>${rows.reduce((s,r)=>s+r.meta.lideranca,0)}</td>
-    <td style="color:${rows.reduce((s,r)=>s+r.realLider,0)>=rows.reduce((s,r)=>s+r.meta.lideranca,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realLider,0)}</td>
-    <td>${rows.reduce((s,r)=>s+r.meta.salao,0)}</td>
-    <td style="color:${rows.reduce((s,r)=>s+r.realSalao,0)>=rows.reduce((s,r)=>s+r.meta.salao,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realSalao,0)}</td>
-    <td>${rows.reduce((s,r)=>s+r.meta.cozinha,0)}</td>
-    <td style="color:${rows.reduce((s,r)=>s+r.realCozinha,0)>=rows.reduce((s,r)=>s+r.meta.cozinha,0)?'#4ade80':'#FF5028'}">${rows.reduce((s,r)=>s+r.realCozinha,0)}</td>
-    <td>${totalMeta}</td>
-    <td style="color:${totalReal>=totalMeta?'#4ade80':'#FF5028'}">${totalReal}</td>
-    <td><span class="${dif>0?'dif-badge pos':dif<0?'dif-badge neg':'dif-badge zero'}">${(dif>0?'+':'')+dif}</span></td>
+    <td class="loja-cell">TOTAL (${selLojas.length} lojas)</td>
+    <td>${metaLider}</td><td style="color:${sumRL>=metaLider?'#4ade80':'#FF5028'}">${sumRL}</td>
+    <td>${metaSalao}</td><td style="color:${sumRS>=metaSalao?'#4ade80':'#FF5028'}">${sumRS}</td>
+    <td>${metaCoz}</td><td style="color:${sumRC>=metaCoz?'#4ade80':'#FF5028'}">${sumRC}</td>
+    <td>${totMt}</td><td style="color:${totRt>=totMt?'#4ade80':'#FF5028'}">${totRt}</td>
+    <td><span class="${totDif>0?'dif-badge pos':totDif<0?'dif-badge neg':'dif-badge zero'}">${(totDif>0?'+':'')+totDif}</span></td>
   </tr>`;
 }
 
