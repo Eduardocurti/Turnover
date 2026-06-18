@@ -441,11 +441,21 @@ footer{border-top:1.5px solid var(--green-border);padding:14px 24px;text-align:c
       </div>
 
       <div class="meta-filters">
-        <h3>Selecione o Mês</h3>
+        <h3>Filtros — Meta vs. Real</h3>
         <div class="hist-row">
           <div class="filter-group">
             <span class="filter-label">Mês de Referência</span>
             <select class="filter-select" id="metaMes" style="min-width:160px"></select>
+          </div>
+          <div>
+            <div class="filter-label" style="margin-bottom:5px">Lojas</div>
+            <div class="multi-box" style="min-width:220px">
+              <div class="multi-hdr">
+                <span>Selecione as lojas</span>
+                <span class="sel-all" id="metaLojaSelAll" onclick="metaToggleAll()">Selecionar todas</span>
+              </div>
+              <div class="multi-body" id="metaLojaList"></div>
+            </div>
           </div>
           <button class="apply-btn" onclick="applyMeta()">Aplicar</button>
         </div>
@@ -1203,6 +1213,29 @@ function buildMetaControls(){
   ])].sort().reverse();
   const sel=document.getElementById('metaMes');
   sel.innerHTML=periods.map(p=>`<option value="${p}">${mLbl(p)}</option>`).join('');
+
+  // popular lojas do mapa de metas
+  const lojas=Object.keys(METAS);
+  document.getElementById('metaLojaList').innerHTML=lojas.map(l=>
+    `<label class="multi-opt"><input type="checkbox" value="${l}" checked onchange="metaOnChange()"/>${l}</label>`
+  ).join('');
+
+  applyMeta();
+}
+
+function metaGetSelected(){
+  return[...document.querySelectorAll('#metaLojaList input:checked')].map(c=>c.value);
+}
+function metaOnChange(){
+  const all=[...document.querySelectorAll('#metaLojaList input')];
+  const checked=all.filter(c=>c.checked);
+  document.getElementById('metaLojaSelAll').textContent=checked.length===all.length?'Desmarcar todas':'Selecionar todas';
+}
+function metaToggleAll(){
+  const all=[...document.querySelectorAll('#metaLojaList input')];
+  const some=all.some(c=>!c.checked);
+  all.forEach(c=>c.checked=some);
+  document.getElementById('metaLojaSelAll').textContent=some?'Desmarcar todas':'Selecionar todas';
   applyMeta();
 }
 
